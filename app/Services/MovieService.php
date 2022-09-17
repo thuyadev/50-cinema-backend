@@ -4,27 +4,36 @@ namespace App\Services;
 
 use App\Adapters\Movies\MovieAdapterInterface;
 use App\Exceptions\CustomException;
+use App\Http\Requests\Api\MovieCollectionRequest;
 use App\Models\Crew;
 use App\Models\Genre;
 use App\Utils\ImageManagementUtil;
+use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
 use App\Repositories\Movies\MovieRepositoryInterface;
 use App\Models\Movie;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
 class MovieService
 {
-    protected $movieRepository;
-    protected $movieAdapter;
-    protected $imageManagementUtil;
+    /**
+     * @param MovieRepositoryInterface $movieRepository
+     * @param MovieAdapterInterface $movieAdapter
+     * @param ImageManagementUtil $imageManagementUtil
+     */
+    public function __construct(
+        private MovieRepositoryInterface $movieRepository,
+        private MovieAdapterInterface $movieAdapter,
+        private ImageManagementUtil $imageManagementUtil,
+    )
+    {}
 
-    public function __construct(MovieRepositoryInterface $movieRepository, MovieAdapterInterface $movieAdapter, ImageManagementUtil $imageManagementUtil)
-    {
-        $this->movieRepository = $movieRepository;
-        $this->movieAdapter = $movieAdapter;
-        $this->imageManagementUtil = $imageManagementUtil;
-    }
-
+    /**
+     * @param $search
+     * @return LengthAwarePaginator
+     * @throws CustomException
+     */
     public function getMovies($search): LengthAwarePaginator
     {
         try {
@@ -41,6 +50,35 @@ class MovieService
         return $movies;
     }
 
+    /**
+     * @param Request $request
+     * @return LengthAwarePaginator
+     */
+    public function getMovieList(Request $request): LengthAwarePaginator
+    {
+        $movies = $this->movieRepository->getMovieList($request);
+
+        return $movies;
+    }
+
+    /**
+     * @param MovieCollectionRequest $request
+     * @return Collection
+     */
+    public function getByCollection(MovieCollectionRequest $request): Collection
+    {
+        $data = $request->validated();
+
+        $movies = $this->movieRepository->collectionMovies($data['collection']);
+
+        return $movies;
+    }
+
+    /**
+     * @param $movie_data
+     * @return Movie
+     * @throws CustomException
+     */
     public function create($movie_data): Movie
     {
         try {
@@ -70,6 +108,11 @@ class MovieService
         return $movie;
     }
 
+    /**
+     * @param $request
+     * @return Movie
+     * @throws CustomException
+     */
     public function createManual($request): Movie
     {
         try {
@@ -109,6 +152,12 @@ class MovieService
         return $movie;
     }
 
+    /**
+     * @param $request
+     * @param Movie $movie
+     * @return Movie
+     * @throws CustomException
+     */
     public function update($request, Movie $movie): Movie
     {
         try {
@@ -165,6 +214,11 @@ class MovieService
         return $movie_data;
     }
 
+    /**
+     * @param Movie $movie
+     * @return string
+     * @throws CustomException
+     */
     public function delete(Movie $movie): string
     {
         try {
@@ -186,6 +240,11 @@ class MovieService
         return 'success';
     }
 
+    /**
+     * @param Movie $movie
+     * @param $genres
+     * @return void
+     */
     public function createMovieGenre(Movie $movie, $genres): void
     {
         foreach ($genres as $genre)
@@ -196,6 +255,12 @@ class MovieService
         }
     }
 
+    /**
+     * @param Movie $movie
+     * @param $crews
+     * @param $director
+     * @return void
+     */
     public function createMovieCrews(Movie $movie, $crews, $director): void
     {
         foreach ($crews as $crew)
@@ -216,6 +281,11 @@ class MovieService
         $movie->movie_crews()->attach($cr['id']);
     }
 
+    /**
+     * @param $images
+     * @param Movie $movie
+     * @return void
+     */
     public function createImagesFromImdb($images, Movie $movie): void
     {
         foreach ($images as $image)
@@ -226,6 +296,11 @@ class MovieService
         }
     }
 
+    /**
+     * @param $images
+     * @param Movie $movie
+     * @return void
+     */
     public function createManualImages($images, Movie $movie): void
     {
         foreach ($images as $image)
@@ -237,6 +312,11 @@ class MovieService
         }
     }
 
+    /**
+     * @param Movie $movie
+     * @param $crews
+     * @return void
+     */
     public function createCrewsManual(Movie $movie, $crews): void
     {
         foreach ($crews as $crew)
@@ -245,6 +325,11 @@ class MovieService
         }
     }
 
+    /**
+     * @param Movie $movie
+     * @param array $delete_ids
+     * @return void
+     */
     public function deleteImages(Movie $movie, array $delete_ids): void
     {
         foreach ($movie->photos as $photo)
@@ -255,9 +340,14 @@ class MovieService
         $movie->photos()->whereIn('id', $delete_ids)->delete();
     }
 
+    /**
+     * @param Movie $movie
+     * @return void
+     */
     public function deleteRelationsData(Movie $movie): void
     {
         $movie->movie_genres()->delete();
         $movie->movie_crews()->delete();
     }
+
 }

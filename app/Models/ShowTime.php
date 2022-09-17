@@ -13,20 +13,35 @@ class ShowTime extends Model
 {
     use HasFactory;
 
+    /**
+     * @var string
+     */
     protected $table = 'show_times';
 
+    /**
+     * @var string[]
+     */
     protected $fillable = ['movie_id', 'start_date', 'end_date'];
 
+    /**
+     * @return BelongsTo
+     */
     public function movie(): BelongsTo
     {
         return $this->belongsTo(Movie::class, 'movie_id');
     }
 
+    /**
+     * @return HasMany
+     */
     public function theaterShowTimes(): HasMany
     {
         return $this->hasMany(TheaterShowTime::class, 'show_time_id');
     }
 
+    /**
+     * @return Attribute
+     */
     public function startDate(): Attribute
     {
         return new Attribute(
@@ -34,6 +49,9 @@ class ShowTime extends Model
         );
     }
 
+    /**
+     * @return Attribute
+     */
     public function endDate(): Attribute
     {
         return new Attribute(
